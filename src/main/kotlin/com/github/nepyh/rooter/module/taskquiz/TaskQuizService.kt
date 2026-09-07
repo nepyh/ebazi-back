@@ -135,16 +135,19 @@ class TaskQuizService(
         var retryScheduled = false
         var taskInvalidated = false
 
-        if (!passed) {
-            if (attemptNumber < MAX_ATTEMPTS) {
-                retryScheduled = true // 스케줄러가 RETRY_DELAY_MINUTES 뒤 다음 attempt를 자동 생성
-            } else {
-                // 최초 1회 + 재시도 2회 모두 실패 -> 완료 처리 취소 (잔디 색에 반영됨)
-                PlanTaskTable.update({ PlanTaskTable.id eq planTaskId }) {
-                    it[isCompleted] = false
-                }
-                taskInvalidated = true
+        if (passed) {
+            // 퀴즈 통과 = 완료 확인 자체이므로 체크 여부와 무관하게 완료 처리
+            PlanTaskTable.update({ PlanTaskTable.id eq planTaskId }) {
+                it[isCompleted] = true
             }
+        } else if (attemptNumber < MAX_ATTEMPTS) {
+            retryScheduled = true // 스케줄러가 RETRY_DELAY_MINUTES 뒤 다음 attempt를 자동 생성
+        } else {
+            // 최초 1회 + 재시도 2회 모두 실패 -> 미완료로 확정 (잔디 색에 반영됨)
+            PlanTaskTable.update({ PlanTaskTable.id eq planTaskId }) {
+                it[isCompleted] = false
+            }
+            taskInvalidated = true
         }
 
         TaskQuizSubmitResponse(

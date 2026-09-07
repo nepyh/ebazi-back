@@ -41,7 +41,7 @@ fun TaskQuizApi(taskQuizService: TaskQuizService) = ApiRoute("plan-tasks") {
         }.describe {
             tag("TaskQuiz")
             summary = "태스크 완료 확인 퀴즈 조회"
-            description = "태스크 종료 시각이 지나고 완료 처리돼 있으면 자동 생성되는 퀴즈(5문항)를 조회. 가장 최근 시도(최초 또는 재시도)를 반환"
+            description = "태스크 종료 시각이 지나면 완료 처리 여부와 상관없이 자동 생성되는 퀴즈(5문항)를 조회. 가장 최근 시도(최초 또는 재시도)를 반환"
             responses {
                 HttpStatusCode.OK {
                     description = "조회 성공"
@@ -84,8 +84,9 @@ fun TaskQuizApi(taskQuizService: TaskQuizService) = ApiRoute("plan-tasks") {
         }.describe {
             tag("TaskQuiz")
             summary = "태스크 완료 확인 퀴즈 제출"
-            description = "5문항 중 4개 미만 정답이면 10분 뒤 새 문제로 재시도가 자동 생성됨(retryScheduled=true). " +
-                "최초 1회 + 재시도 2회 모두 실패하면(attemptNumber=3에서 불합격) 해당 태스크의 완료 처리가 취소됨(taskInvalidated=true)"
+            description = "퀴즈 자체가 완료 확인 수단: 4개 이상 정답(통과)이면 해당 태스크가 자동으로 완료 처리됨(passed=true). " +
+                "4개 미만이면 10분 뒤 새 문제로 재시도가 자동 생성되고(retryScheduled=true), " +
+                "최초 1회 + 재시도 2회 모두 실패하면(attemptNumber=3에서 불합격) 해당 태스크가 미완료로 확정됨(taskInvalidated=true)"
             requestBody {
                 ContentType.Application.Json {
                     schema = jsonSchema<TaskQuizSubmitRequest>()
