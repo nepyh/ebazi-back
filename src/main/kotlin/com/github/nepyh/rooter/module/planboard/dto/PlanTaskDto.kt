@@ -39,3 +39,8 @@ data class PlanTaskCreateRequest(
 data class PlanTaskCreateResponse(
     val message: String
 )
+
+@Serializable
+data class PlanTaskCompleteRequest(
+    val isCompleted: Boolean
+)
