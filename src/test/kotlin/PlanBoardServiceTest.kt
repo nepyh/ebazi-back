@@ -55,7 +55,12 @@ class PlanBoardServiceTest : StringSpec({
 
     beforeSpec {
         transaction(db) {
-            SchemaUtils.drop(PlanTaskTable, DailyPlanTable, PlanBoardTable, UserTable, inBatch = true)
+            // CASCADE 로 드랍: users 를 다른 스펙(예: CatalogServiceTest)의 테이블이 FK 로 참조하고
+            // 있어도 실행 순서와 무관하게 안전하게 재생성하기 위함
+            exec("DROP TABLE IF EXISTS plan_tasks CASCADE")
+            exec("DROP TABLE IF EXISTS daily_plans CASCADE")
+            exec("DROP TABLE IF EXISTS plan_boards CASCADE")
+            exec("DROP TABLE IF EXISTS users CASCADE")
             SchemaUtils.create(UserTable, PlanBoardTable, DailyPlanTable, PlanTaskTable)
             // DDL(rooter-ddl) 의 uq_daily_plans_board_date 와 동일한 제약 — insertIgnore 레이스 방지 검증용
             exec("ALTER TABLE daily_plans ADD CONSTRAINT uq_daily_plans_board_date UNIQUE (plan_board_id, plan_date)")
@@ -192,6 +197,24 @@ class PlanBoardServiceTest : StringSpec({
             planTaskService.createTask(
                 userId,
                 taskRequest(planBoardId = boardId, startTime = "25:00", endTime = "19:30")
+            )
+        }
+    }
+
+    "createTask: 종료 시간이 시작 시간보다 빠르거나 같으면 InvalidTimeRangeException" {
+        val userId = seedUser("task-range@test.com")
+        val boardId = seedBoard(userId)
+
+        shouldThrow<PlanTaskValidationException.InvalidTimeRangeException> {
+            planTaskService.createTask(
+                userId,
+                taskRequest(planBoardId = boardId, startTime = "19:30", endTime = "19:30")
+            )
+        }
+        shouldThrow<PlanTaskValidationException.InvalidTimeRangeException> {
+            planTaskService.createTask(
+                userId,
+                taskRequest(planBoardId = boardId, startTime = "19:30", endTime = "17:00")
             )
         }
     }
